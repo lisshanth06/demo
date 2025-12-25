@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Writer</title>
+  
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  
+  <!-- Alpine.js for state management -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3ECF8E',
+            'primary-hover': '#2DD4BF',
+            background: '#0F172A',
+            surface: '#1E293B',
+            border: '#334155',
+            'text-primary': '#F1F5F9',
+            'text-secondary': '#94A3B8',
+            muted: '#64748B',
+            error: '#EF4444',
+            success: '#10B981'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom styles */
+    body {
+      background: #0F172A;
+      color: #F1F5F9;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+    }
+    
+    .htmx-indicator {
+      display: none;
+    }
+    
+    .htmx-request .htmx-indicator {
+      display: inline-block;
+    }
+    
+    .htmx-request.htmx-indicator {
+      display: inline-block;
+    }
+    
+    /* Smooth animations */
+    * {
+      transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Chat scroll container */
+    .chat-container {
+      scroll-behavior: smooth;
+    }
+    
+    /* Copy button animation */
+    @keyframes copySuccess {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .copy-success {
+      animation: copySuccess 200ms ease;
+    }
+    
+    /* Toast notification */
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .toast {
+      animation: slideUp 300ms ease;
+    }
+    
+    /* Message animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .message-enter {
+      animation: fadeInUp 300ms ease;
+    }
+    
+    /* Loading spinner */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Toast Container -->
+  <div id="toast-container" 
+       class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"
+       x-data="{ toasts: [] }"
+       @show-toast.window="
+         toasts.push({
+           id: Date.now(),
+           message: $event.detail.message,
+           type: $event.detail.type || 'success'
+         });
+         setTimeout(() => {
+           toasts.shift();
+         }, 4000);
+       ">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div class="toast bg-surface border rounded-lg p-4 shadow-lg min-w-[300px]"
+           :class="{
+             'border-success': toast.type === 'success',
+             'border-error': toast.type === 'error',
+             'border-amber-500': toast.type === 'warning',
+             'border-blue-500': toast.type === 'info'
+           }">
+        <div class="flex items-center gap-3">
+          <span x-show="toast.type === 'success'" class="text-success text-xl">✓</span>
+          <span x-show="toast.type === 'error'" class="text-error text-xl">✕</span>
+          <span x-show="toast.type === 'warning'" class="text-amber-500 text-xl">⚠</span>
+          <span x-show="toast.type === 'info'" class="text-blue-500 text-xl">ℹ</span>
+          <p class="text-text-primary text-sm" x-text="toast.message"></p>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="border-b border-border bg-surface">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-8">
+          <a hx-get="/" 
+             hx-target="#content" 
+             hx-push-url="true"
+             class="text-2xl font-semibold text-text-primary hover:text-primary">
+            AI Writer
+          </a>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <a hx-get="/create/" 
+             hx-target="#content" 
+             hx-push-url="true"
+             class="px-4 py-2 bg-primary hover:bg-primary-hover text-background rounded-lg font-medium">
+            Create Project
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div id="content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Global Scripts -->
+  <script>
+    // Global utilities
+    function showToast(message, type = 'success') {
+      window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: { message, type }
+      }));
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Failed to copy', 'error');
+      });
+    }
+    
+    function countWords(text) {
+      return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+    }
+    
+    function autoScrollChat(container) {
+      if (container) {
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+        if (isNearBottom) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

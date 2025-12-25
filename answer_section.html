@@ -1,0 +1,20 @@
+<!-- Updated answer display to match the new design system -->
+{% if answer %}
+<div class="message-enter">
+  <div class="bg-transparent border border-primary rounded-lg p-3">
+    <div class="flex items-start gap-3">
+      <div class="flex-1">
+        <h4 class="text-sm font-semibold text-primary mb-2">Answer</h4>
+        <div class="text-text-primary text-sm whitespace-pre-wrap">{{ answer|linebreaks }}</div>
+      </div>
+      <button onclick="copyToClipboard(`{{ answer|escapejs }}`)"
+              class="text-text-secondary hover:text-primary text-xs flex-shrink-0">
+        📋
+      </button>
+    </div>
+    <div class="mt-2 text-xs text-muted">
+      Just now
+    </div>
+  </div>
+</div>
+{% endif %}

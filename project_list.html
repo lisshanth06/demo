@@ -1,0 +1,65 @@
+{% extends "writer/base.html" %}
+
+{% block content %}
+<div x-data="{ searchQuery: '' }">
+  <div class="flex items-center justify-between mb-8">
+    <h1 class="text-3xl font-semibold text-text-primary">Projects</h1>
+    <a hx-get="/create/" 
+       hx-target="#content" 
+       hx-push-url="true"
+       class="px-4 py-2 bg-primary hover:bg-primary-hover text-background rounded-lg font-medium">
+      Create New Project
+    </a>
+  </div>
+
+  {% if projects %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for project in projects %}
+        <a hx-get="/project/{{ project.id }}/" 
+           hx-target="#content" 
+           hx-push-url="true"
+           class="block bg-surface border border-border rounded-lg p-6 hover:border-primary cursor-pointer">
+          <div class="flex items-start justify-between mb-3">
+            <h3 class="text-xl font-semibold text-text-primary">
+              {{ project.name }}
+            </h3>
+            <span class="text-text-secondary text-sm">
+              📚 {{ project.source_set.count }}
+            </span>
+          </div>
+          
+          <p class="text-text-secondary text-sm mb-3">
+            {% if project.source_set.count > 0 %}
+              {{ project.source_set.count }} source{{ project.source_set.count|pluralize }}
+            {% else %}
+              No sources yet
+            {% endif %}
+          </p>
+          
+          <div class="flex items-center gap-2 text-xs text-muted">
+            <span>🕒</span>
+            <span>{{ project.updated_at|date:"M d, g:i A" }}</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State -->
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+      <div class="text-6xl mb-6">📝</div>
+      <h2 class="text-2xl font-semibold text-text-primary mb-3">
+        No projects yet
+      </h2>
+      <p class="text-text-secondary mb-8 max-w-md">
+        Create your first project to start writing with AI assistance
+      </p>
+      <a hx-get="/create/" 
+         hx-target="#content" 
+         hx-push-url="true"
+         class="px-6 py-3 bg-primary hover:bg-primary-hover text-background rounded-lg font-medium">
+        Create Project
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

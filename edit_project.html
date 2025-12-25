@@ -1,0 +1,56 @@
+{% extends "writer/base.html" %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <div class="bg-surface border border-border rounded-xl p-8">
+    <h2 class="text-2xl font-semibold text-text-primary mb-6">Edit Project</h2>
+
+    <form hx-post="/project/{{ project.id }}/edit/" 
+          hx-target="#content" 
+          hx-push-url="/project/{{ project.id }}/"
+          x-data="{ name: '{{ project.name }}', isSubmitting: false }"
+          @htmx:before-request="isSubmitting = true"
+          @htmx:after-request="isSubmitting = false; showToast('Project updated', 'success')">
+      {% csrf_token %}
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-text-secondary mb-2">
+          Project Name
+        </label>
+        <input type="text" 
+               name="name" 
+               x-model="name"
+               value="{{ project.name }}" 
+               required
+               class="w-full px-4 py-3 bg-background border border-border rounded-lg text-text-primary placeholder-muted focus:border-primary focus:outline-none">
+        <div class="mt-2 text-xs text-muted">
+          <span x-text="name.length"></span> characters
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit"
+                :disabled="isSubmitting || name.trim().length === 0"
+                :class="isSubmitting || name.trim().length === 0 ? 'bg-muted cursor-not-allowed opacity-70' : 'bg-primary hover:bg-primary-hover'"
+                class="flex-1 px-4 py-3 text-background rounded-lg font-medium">
+          <span x-show="!isSubmitting">Save Changes</span>
+          <span x-show="isSubmitting" class="flex items-center justify-center gap-2">
+            <svg class="spinner w-4 h-4" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Saving...
+          </span>
+        </button>
+        
+        <a hx-get="/project/{{ project.id }}/" 
+           hx-target="#content" 
+           hx-push-url="true"
+           class="px-4 py-3 bg-background border border-border hover:border-primary text-text-primary rounded-lg font-medium">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
